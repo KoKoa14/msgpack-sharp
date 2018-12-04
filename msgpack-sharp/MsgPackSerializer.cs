@@ -190,69 +190,76 @@ namespace scopely.msgpacksharp
 
 		internal object Deserialize(object result, BinaryReader reader)
 		{
-			byte header = reader.ReadByte();
-			if (header == MsgPackConstants.Formats.NIL)
-				result = null;
-			else
+			try
 			{
-			    if (DefaultContext.SerializationMethod == SerializationMethod.Array)
-			    {
-			        if (header == MsgPackConstants.Formats.ARRAY_16)
-			        {
-			            reader.ReadByte();
-			            reader.ReadByte();
-			        }
-			        else if (header == MsgPackConstants.Formats.ARRAY_32)
-			        {
-			            reader.ReadByte();
-			            reader.ReadByte();
-			            reader.ReadByte();
-			            reader.ReadByte();
-			        }
-			        else if (header < MsgPackConstants.FixedArray.MIN || header > MsgPackConstants.FixedArray.MAX)
-			        {
-			            throw new ApplicationException("The serialized array format isn't valid for header [" + header + "]");
-			        }
+				byte header = reader.ReadByte();
+				if (header == MsgPackConstants.Formats.NIL)
+					result = null;
+				else
+				{
+					if (DefaultContext.SerializationMethod == SerializationMethod.Array)
+					{
+						if (header == MsgPackConstants.Formats.ARRAY_16)
+						{
+							reader.ReadByte();
+							reader.ReadByte();
+						}
+						else if (header == MsgPackConstants.Formats.ARRAY_32)
+						{
+							reader.ReadByte();
+							reader.ReadByte();
+							reader.ReadByte();
+							reader.ReadByte();
+						}
+						else if (header < MsgPackConstants.FixedArray.MIN || header > MsgPackConstants.FixedArray.MAX)
+						{
+							throw new ApplicationException("The serialized array format isn't valid for header [" + header + "]");
+						}
 
-			        foreach (SerializableProperty prop in props)
-			        {
-			            prop.Deserialize(result, reader);
-			        }
-			    }
-			    else
-			    {
-			        int numElements;
-			        if (header >= MsgPackConstants.FixedMap.MIN && header <= MsgPackConstants.FixedMap.MAX)
-			        {
-			            numElements = header & 0x0F;
-			        }
-			        else if (header == MsgPackConstants.Formats.MAP_16)
-			        {
-			            numElements = (reader.ReadByte() << 8) +
-			                          reader.ReadByte();
-			        }
-			        else if (header == MsgPackConstants.Formats.MAP_32)
-			        {
-			            numElements = (reader.ReadByte() << 24) +
-			                          (reader.ReadByte() << 16) +
-			                          (reader.ReadByte() << 8) +
-			                          reader.ReadByte();
-			        }
-                    else
-                    {
-                        throw new ApplicationException("The serialized map format isn't valid");
-                    }
+						foreach (SerializableProperty prop in props)
+						{
+							prop.Deserialize(result, reader);
+						}
+					}
+					else
+					{
+						int numElements;
+						if (header >= MsgPackConstants.FixedMap.MIN && header <= MsgPackConstants.FixedMap.MAX)
+						{
+							numElements = header & 0x0F;
+						}
+						else if (header == MsgPackConstants.Formats.MAP_16)
+						{
+							numElements = (reader.ReadByte() << 8) +
+										  reader.ReadByte();
+						}
+						else if (header == MsgPackConstants.Formats.MAP_32)
+						{
+							numElements = (reader.ReadByte() << 24) +
+										  (reader.ReadByte() << 16) +
+										  (reader.ReadByte() << 8) +
+										  reader.ReadByte();
+						}
+						else
+						{
+							throw new ApplicationException("The serialized map format isn't valid");
+						}
 
-			        for (int i = 0; i < numElements; i++)
-			        {
-			            string propName = (string) MsgPackIO.ReadMsgPackString(reader, NilImplication.Null);
-			            SerializableProperty propToProcess = null;
-			            if (propsByName.TryGetValue(propName, out propToProcess))
-			                propToProcess.Deserialize(result, reader);
-			        }
-			    }
+						for (int i = 0; i < numElements; i++)
+						{
+							string propName = (string) MsgPackIO.ReadMsgPackString(reader, NilImplication.Null);
+							SerializableProperty propToProcess = null;
+							if (propsByName.TryGetValue(propName, out propToProcess))
+								propToProcess.Deserialize(result, reader);
+						}
+					}
+				}
+				return result;
 			}
-			return result;
+			catch
+			{
+				return null;
+			}
 		}
 
 		internal static void SerializeObject(object o, BinaryWriter writer)
