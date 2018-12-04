@@ -45,7 +45,10 @@ namespace scopely.msgpacksharp
 		{
 			object val = MsgPackIO.DeserializeValue(ValueType, reader, _nilImplication);
 			object safeValue = (val == null) ? null : Convert.ChangeType(val, ValueType);
-			PropInfo.SetValue(o, safeValue, EmptyObjArgs);
+			if (o != null)
+			{
+				PropInfo.SetValue(o, safeValue, EmptyObjArgs);
+			}
 		}
 
 		public override string ToString ()
